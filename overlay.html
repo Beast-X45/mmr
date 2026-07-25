@@ -102,21 +102,19 @@
 
     <script>
         // ==================== 設定情報 ====================
-        // URLパラメータから名前を取得 (?name=あなたのラウンジ名)。指定がなければデフォルト名
         const urlParams = new URLSearchParams(window.location.search);
-        const PLAYER_NAME = urlParams.get('name') || 'YourPlayerName'; 
+        const PLAYER_NAME = urlParams.get('name') || ''; 
 
-        const API_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        // CORSブロック回避用のプロキシ設定
+        const TARGET_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        const API_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
 
-        // 状態変数
         let displayedMmr = 0;
         let targetMmr = 0;
         let mmrAnimationInterval = null;
         let pageSwitchInterval = null;
         let lastUpdateTimestamp = 0;
-        let currentReason = 'table';
 
-        // 桁位置の基本設定 (1ページ目 MMR)
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
             { id: 'mmr-d4', x: 385, y: 54 },
@@ -125,42 +123,54 @@
             { id: 'mmr-d1', x: 715, y: 54 }
         ];
 
-        // ランク名のマッピング (APIからの返り値 -> 画像ファイル名)
+        // 判定用にすべて小文字で定義
         const rankMap = {
-            'Iron': 'Rank_1_Iron.png',
-            'Bronze': 'Rank_2_Bronze.png',
-            'Silver': 'Rank_3_Silver.png',
-            'Gold': 'Rank_4_Gold.png',
-            'Platinum': 'Rank_5_Platinum.png',
-            'Sapphire': 'Rank_6_Sapphire.png',
-            'Ruby': 'Rank_7_Ruby.png',
-            'Diamond': 'Rank_8_Diamond.png',
-            'Master': 'Rank_9_Master.png',
-            'Grandmaster': 'Rank_10_Grandmaster.png'
+            'iron': 'Rank_1_Iron.png',
+            'bronze': 'Rank_2_Bronze.png',
+            'silver': 'Rank_3_Silver.png',
+            'gold': 'Rank_4_Gold.png',
+            'platinum': 'Rank_5_Platinum.png',
+            'sapphire': 'Rank_6_Sapphire.png',
+            'ruby': 'Rank_7_Ruby.png',
+            'diamond': 'Rank_8_Diamond.png',
+            'master': 'Rank_9_Master.png',
+            'grandmaster': 'Rank_10_Grandmaster.png'
         };
 
+        // 【新機能】届いたデータのキーをすべて自動で小文字にする魔法の関数
+        function toLowerCaseKeys(obj) {
+            if (Array.isArray(obj)) return obj.map(toLowerCaseKeys);
+            if (obj !== null && typeof obj === 'object') {
+                return Object.keys(obj).reduce((acc, key) => {
+                    acc[key.toLowerCase()] = toLowerCaseKeys(obj[key]);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        }
+
         // ==================== メイン処理 ====================
-
-        // 初期実行と2分ごとの定期的フェッチ
-        fetchData();
-        setInterval(fetchData, 2 * 60 * 1000); // 2分
-
-        // ページ切替の常時監視
-        setInterval(checkPageSwitchStatus, 1000);
+        if (PLAYER_NAME) {
+            fetchData();
+            setInterval(fetchData, 2 * 60 * 1000); 
+            setInterval(checkPageSwitchStatus, 1000); 
+        }
 
         async function fetchData() {
             try {
                 const response = await fetch(API_URL);
                 if (!response.ok) return;
-                const data = await response.json();
+                const rawData = await response.json();
+                if (!rawData) return;
 
-                if (!data) return;
+                // ここでデータをすべて小文字に変換！大文字小文字の差を無くします
+                const data = toLowerCaseKeys(rawData);
 
-                const newMmr = data.mmr || 0;
-                const rankName = data.rank || 'Iron';
-                const latestMatch = (data.mmrChanges && data.mmrChanges.length > 0) ? data.mmrChanges[0] : null;
+                // 以降、データの指定はすべて【小文字】で統一
+                const newMmr = data.mmr !== undefined ? data.mmr : 0;
+                const rankName = data.rank || 'iron';
+                const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
-                // 初回読み込み時の初期化
                 if (displayedMmr === 0 && newMmr !== 0) {
                     displayedMmr = newMmr;
                     targetMmr = newMmr;
@@ -170,26 +180,19 @@
                     return;
                 }
 
-                // MMRに変動があったかチェック
                 if (newMmr !== targetMmr) {
                     targetMmr = newMmr;
                     lastUpdateTimestamp = Date.now();
 
-                    // アニメーション開始 (1秒間に40の速さ = 25msごとに1)
                     startMmrAnimation();
-
-                    // ランク画像の更新
                     updateRankDisplay(rankName);
 
                     if (latestMatch) {
-                        currentReason = latestMatch.reason || 'table';
-                        // reasonが 'strike' 以外 (table等) の場合のみ試合結果を更新
-                        if (currentReason !== 'strike') {
+                        const reasonStr = latestMatch.reason ? String(latestMatch.reason).toLowerCase() : '';
+                        if (reasonStr.includes('table')) {
                             updateMatchDisplay(latestMatch);
                         }
                     }
-
-                    // 10分間のページ交互切り替えループを開始
                     startPageSwitchLoop();
                 }
 
@@ -199,10 +202,8 @@
         }
 
         // ==================== 表示更新関数 ====================
-
-        // MMRの数字表示 (mmr_0.png ~ mmr_9.png) と「6」の個別補正処理
         function updateMmrDisplay(val) {
-            const str = String(val).padStart(5, '0'); // 5桁に整形
+            const str = String(val).padStart(5, '0');
             const digits = str.split('');
 
             for (let i = 0; i < 5; i++) {
@@ -211,8 +212,8 @@
                 const pos = mmrPositions[i];
 
                 imgEl.src = `mmr_${digit}.png`;
+                imgEl.style.display = 'block';
 
-                // 「6」の場合の座標・サイズ補正
                 if (digit === '6') {
                     imgEl.style.height = '188px';
                     imgEl.style.left = `${pos.x - 5}px`;
@@ -225,12 +226,12 @@
             }
         }
 
-        // ランク画像の更新
         function updateRankDisplay(rankName) {
-            let fileName = rankMap[rankName];
+            const lowRankName = String(rankName).toLowerCase();
+            let fileName = rankMap[lowRankName];
             if (!fileName) {
                 for (const key in rankMap) {
-                    if (rankName.includes(key)) {
+                    if (lowRankName.includes(key)) {
                         fileName = rankMap[key];
                         break;
                     }
@@ -242,31 +243,25 @@
             document.getElementById('p2-rank').src = fileName;
         }
 
-        // 直近試合の表示更新
         function updateMatchDisplay(match) {
-            const delta = match.mmrDelta || match.change || 0;
-            const score = match.score || 0;
+            // ここもすべて【小文字】でデータを受け取る
+            const delta = match.mmrdelta !== undefined ? match.mmrdelta : 0;
+            const score = match.score !== undefined ? match.score : 0;
             const tier = match.tier || '';
 
-            // --- 符号の更新 (D_plus.png / D_minus.png) ---
             const signSrc = delta >= 0 ? 'D_plus.png' : 'D_minus.png';
             document.getElementById('p1-diff-sign').src = signSrc;
             document.getElementById('p2-diff-sign').src = signSrc;
 
             const absDeltaStr = String(Math.abs(delta)).split('');
 
-            // --- 1ページ目の差分数字 (D_0.png ~ D_9.png) ---
             setDiffDigits(['p1-diff-1', 'p1-diff-2', 'p1-diff-3'], absDeltaStr);
-
-            // --- 2ページ目のMMR変動数字 (D_0.png ~ D_9.png) ---
             setDiffDigits(['p2-diff-1', 'p2-diff-2', 'p2-diff-3'], absDeltaStr);
 
-            // --- 2ページ目のスコア (mmr_0.png ~ mmr_9.png) ---
             const scoreStr = String(score).split('');
             setScoreDigits(['score-d100', 'score-d10', 'score-d1'], scoreStr);
 
-            // --- 2ページ目のTier文字更新 (Tier_X.png / 'Q' 特例対応) ---
-            const tierChars = tier.toUpperCase().split('');
+            const tierChars = String(tier).toUpperCase().split('');
             const t1 = document.getElementById('tier-char1');
             const t2 = document.getElementById('tier-char2');
 
@@ -287,7 +282,6 @@
             }
         }
 
-        // 差分用数字 (D_0.png ~ D_9.png) をセットする関数
         function setDiffDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
@@ -300,7 +294,6 @@
             }
         }
 
-        // スコア用数字 (mmr_0.png ~ mmr_9.png) をセットする関数
         function setScoreDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
@@ -313,9 +306,7 @@
             }
         }
 
-        // ==================== アニメーション & タイマー ====================
-
-        // MMRカウントアニメーション
+        // ==================== アニメーション ====================
         function startMmrAnimation() {
             if (mmrAnimationInterval) clearInterval(mmrAnimationInterval);
 
@@ -333,7 +324,6 @@
             }, 25);
         }
 
-        // ページ切替ループ (10秒交代)
         function startPageSwitchLoop() {
             if (pageSwitchInterval) clearInterval(pageSwitchInterval);
 
@@ -359,7 +349,6 @@
             }, 10 * 1000);
         }
 
-        // 10分経ったら確実に1ページ目に戻す定常監視
         function checkPageSwitchStatus() {
             if (lastUpdateTimestamp > 0 && (Date.now() - lastUpdateTimestamp > 10 * 60 * 1000)) {
                 const page1 = document.getElementById('page1');
@@ -372,4 +361,4 @@
         }
     </script>
 </body>
-  </html>
+</html>
