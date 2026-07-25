@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>MKWorld Lounge Overlay Setup</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #16213e;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 14px;
+            color: #a0a0b0;
+            margin-bottom: 25px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            background-color: #0f3460;
+            color: white;
+        }
+        input[type="text"]::placeholder {
+            color: #888;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #e94560;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #d83a52;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #4ade80;
+            word-break: break-all;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Overlay Setup</h1>
+        <p>ラウンジ名を入力してURLを生成します</p>
+        
+        <input type="text" id="playerName" placeholder="ラウンジ名を入力 (例: Kusaan)">
+        <button onclick="generateAndCopy()">URLを生成してコピー</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function generateAndCopy() {
+            const nameInput = document.getElementById('playerName').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!nameInput) {
+                resultDiv.style.color = '#ff6b6b';
+                resultDiv.innerText = '⚠️ ラウンジ名を入力してください';
+                return;
+            }
+
+            // 現在のページのURLを取得して、ベース部分を作る
+            // (末尾の / や index.html を取り除く)
+            let baseUrl = window.location.href.split('?')[0];
+            baseUrl = baseUrl.replace(/\/index\.html$/, '').replace(/\/$/, '');
+
+            // オーバーレイ用のURLを生成
+            const overlayUrl = `${baseUrl}/overlay.html?name=${encodeURIComponent(nameInput)}`;
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(overlayUrl).then(() => {
+                resultDiv.style.color = '#4ade80';
+                resultDiv.innerHTML = `✅ コピー完了！<br>ブラウザソースに貼り付けてください。<br><br><span style="color:#a0a0b0; font-size:10px;">${overlayUrl}</span>`;
+            }).catch(err => {
+                resultDiv.style.color = '#ff6b6b';
+                resultDiv.innerText = '❌ コピーに失敗しました。';
+                console.error('Clipboard copy failed:', err);
+            });
+        }
+    </script>
+
+</body>
+</html>
