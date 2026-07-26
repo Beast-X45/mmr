@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay (Netlify Proxy Ver)</title>
+    <title>MKWorld Lounge Overlay (Final Ver)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -97,8 +97,9 @@
         const PLAYER_NAME = urlParams.get('name') || ''; 
         document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // 【最重要】他人のプロキシを使わず、Netlifyの自分のドメイン経由で安全に取得する
-        const API_URL = `/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        // ★ datalis ➔ details に修正しました！ ★
+        const TARGET_URL = `https://lounge.mkcentral.com/api/player/details?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        const API_URL = `https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(TARGET_URL)}`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
@@ -138,7 +139,6 @@
             return obj;
         }
 
-        // ==================== メイン処理 ====================
         if (PLAYER_NAME) {
             fetchData();
             setInterval(fetchData, 2 * 60 * 1000); 
@@ -149,17 +149,17 @@
 
         async function fetchData() {
             try {
-                setStatus("Netlify内部プロキシ経由で通信を開始します...");
+                setStatus("通信を開始します...");
                 const response = await fetch(API_URL);
                 
                 setStatus("通信ステータス: " + response.status);
                 if (!response.ok) {
-                    setStatus("❌ エラーが発生しました。ステータスコードを確認してください。");
+                    setStatus("❌ 通信エラーが発生しました。");
                     return;
                 }
                 
                 const rawData = await response.json();
-                setStatus("データ受信成功！文字数: " + JSON.stringify(rawData).length);
+                setStatus("データ受信成功！");
 
                 const data = toLowerCaseKeys(rawData);
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
@@ -174,7 +174,7 @@
                     updateMmrDisplay(displayedMmr);
                     updateRankDisplay(rankName);
                     if (latestMatch) updateMatchDisplay(latestMatch);
-                    setStatus("✅ 画面へ描画完了！");
+                    setStatus("✅ 画面への描画指示が完了しました！");
                     return;
                 }
 
@@ -197,7 +197,6 @@
             }
         }
 
-        // ==================== 表示更新関数 ====================
         function updateMmrDisplay(val) {
             const str = String(val).padStart(5, '0');
             const digits = str.split('');
