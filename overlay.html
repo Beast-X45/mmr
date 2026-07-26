@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay (Final Ver)</title>
+    <title>MKWorld Lounge Overlay (AllOrigins Ver)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -97,9 +97,9 @@
         const PLAYER_NAME = urlParams.get('name') || ''; 
         document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // ★ datalis ➔ details に修正しました！ ★
-        const TARGET_URL = `https://lounge.mkcentral.com/api/player/details?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
-        const API_URL = `https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(TARGET_URL)}`;
+        // ★変更点：スマホのセキュリティを通り抜けやすい AllOrigins の raw API を使用
+        const TARGET_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        const API_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
@@ -149,7 +149,7 @@
 
         async function fetchData() {
             try {
-                setStatus("通信を開始します...");
+                setStatus("AllOrigins経由で通信を開始します...");
                 const response = await fetch(API_URL);
                 
                 setStatus("通信ステータス: " + response.status);
@@ -159,7 +159,7 @@
                 }
                 
                 const rawData = await response.json();
-                setStatus("データ受信成功！");
+                setStatus("データ受信成功！文字数: " + JSON.stringify(rawData).length);
 
                 const data = toLowerCaseKeys(rawData);
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
