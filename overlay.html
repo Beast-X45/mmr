@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay (Debug Ver)</title>
+    <title>MKWorld Lounge Overlay (Netlify Proxy Ver)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -97,9 +97,8 @@
         const PLAYER_NAME = urlParams.get('name') || ''; 
         document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // 新しい安定プロキシサービスに変更
-        const TARGET_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
-        const API_URL = `https://corsproxy.io/?${encodeURIComponent(TARGET_URL)}`;
+        // 【最重要】他人のプロキシを使わず、Netlifyの自分のドメイン経由で安全に取得する
+        const API_URL = `/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
@@ -145,28 +144,24 @@
             setInterval(fetchData, 2 * 60 * 1000); 
             setInterval(checkPageSwitchStatus, 1000); 
         } else {
-            setStatus("❌ エラー: URLの末尾に ?name=〇〇 がありません。入力ページからやり直してください。");
+            setStatus("❌ エラー: URLの末尾に ?name=〇〇 がありません。");
         }
 
         async function fetchData() {
             try {
-                setStatus("API通信を開始します...");
+                setStatus("Netlify内部プロキシ経由で通信を開始します...");
                 const response = await fetch(API_URL);
                 
                 setStatus("通信ステータス: " + response.status);
                 if (!response.ok) {
-                    setStatus("❌ 通信ブロックまたはエラーが発生しました。");
+                    setStatus("❌ エラーが発生しました。ステータスコードを確認してください。");
                     return;
                 }
                 
                 const rawData = await response.json();
-                setStatus("データ受信成功！ 文字数: " + JSON.stringify(rawData).length);
-                
-                // 生データの一部を表示して確認
-                setStatus("生データ先頭: " + JSON.stringify(rawData).substring(0, 80));
+                setStatus("データ受信成功！文字数: " + JSON.stringify(rawData).length);
 
                 const data = toLowerCaseKeys(rawData);
-                
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
                 const rankName = data.rank || '未取得';
                 setStatus(`解析結果 ➔ MMR: ${newMmr}, ランク: ${rankName}`);
@@ -179,7 +174,7 @@
                     updateMmrDisplay(displayedMmr);
                     updateRankDisplay(rankName);
                     if (latestMatch) updateMatchDisplay(latestMatch);
-                    setStatus("✅ 画面への初回描画指示を出しました。");
+                    setStatus("✅ 画面へ描画完了！");
                     return;
                 }
 
@@ -195,12 +190,10 @@
                         }
                     }
                     startPageSwitchLoop();
-                    setStatus("🔄 MMR更新を検知、アニメーションを開始します。");
                 }
 
             } catch (error) {
-                setStatus("❌ 例外エラーが発生しました: " + error.message);
-                console.error(error);
+                setStatus("❌ エラー: " + error.message);
             }
         }
 
