@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay</title>
+    <title>MKWorld Lounge Overlay (Debug Ver)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -38,13 +38,11 @@
             display: block;
         }
 
-        /* 画像配置用の共通設定 */
         .layer-img {
             position: absolute;
             display: block;
         }
 
-        /* ランク画像 (共通) */
         .rank-icon {
             left: 30px;
             top: 25px;
@@ -58,17 +56,13 @@
     <div id="overlay">
         <div id="page1" class="page active">
             <img id="p1-rank" class="layer-img rank-icon" src="" alt="Rank">
-
             <img id="mmr-d5" class="layer-img" src="" alt="">
             <img id="mmr-d4" class="layer-img" src="" alt="">
             <img id="mmr-d3" class="layer-img" src="" alt="">
             <img id="mmr-d2" class="layer-img" src="" alt="">
             <img id="mmr-d1" class="layer-img" src="" alt="">
-
             <img class="layer-img" src="word_Last.png" style="left:930px; top:60px; height:70px;" alt="Last">
-
             <img id="p1-diff-sign" class="layer-img" style="left:930px; top:150px; height:50px;" src="" alt="">
-
             <img id="p1-diff-1" class="layer-img" style="left:960px; top:140px; height:80px;" src="" alt="">
             <img id="p1-diff-2" class="layer-img" style="left:1010px; top:140px; height:80px;" src="" alt="">
             <img id="p1-diff-3" class="layer-img" style="left:1060px; top:140px; height:80px;" src="" alt="">
@@ -76,38 +70,36 @@
 
         <div id="page2" class="page">
             <img id="p2-rank" class="layer-img rank-icon" src="" alt="Rank">
-
             <img class="layer-img" src="word_Last.png" style="left:275px; top:45px; height:80px;" alt="Last">
             <img class="layer-img" src="word_mogi.png" style="left:475px; top:45px; height:96px;" alt="mogi">
             <img class="layer-img" src="word_Tier.png" style="left:735px; top:44px; height:90px;" alt="Tier">
-
             <img id="tier-char1" class="layer-img" style="left:950px; top:40px; height:95px;" src="" alt="">
             <img id="tier-char2" class="layer-img" style="left:1010px; top:40px; height:95px;" src="" alt="">
-
             <img id="score-d100" class="layer-img" style="left:290px; top:150px; height:100px;" src="" alt="">
             <img id="score-d10"  class="layer-img" style="left:350px; top:150px; height:100px;" src="" alt="">
             <img id="score-d1"   class="layer-img" style="left:420px; top:150px; height:100px;" src="" alt="">
-
             <img class="layer-img" src="word_pts.png" style="left:495px; top:175px; height:80px;" alt="pts">
-
             <img id="p2-diff-sign" class="layer-img" style="left:735px; top:175px; height:50px;" src="" alt="">
-
             <img id="p2-diff-1" class="layer-img" style="left:780px; top:160px; height:80px;" src="" alt="">
             <img id="p2-diff-2" class="layer-img" style="left:830px; top:160px; height:80px;" src="" alt="">
             <img id="p2-diff-3" class="layer-img" style="left:890px; top:160px; height:80px;" src="" alt="">
-
             <img class="layer-img" src="word_mmr.png" style="left:945px; top:175px; height:65px;" alt="mmr">
         </div>
     </div>
 
+    <div id="debug-board" style="position: absolute; bottom: 0; left: 0; width: 1200px; height: 110px; background: rgba(0,0,0,0.9); color: #00ff00; font-family: monospace; font-size: 14px; padding: 10px; z-index: 10000; box-sizing: border-box; overflow-y: auto; border-top: 2px solid #00ff00;">
+        [DEBUG] 名前: <span id="db-name">未設定</span>
+        <div id="db-status">システム起動中...</div>
+    </div>
+
     <script>
-        // ==================== 設定情報 ====================
         const urlParams = new URLSearchParams(window.location.search);
         const PLAYER_NAME = urlParams.get('name') || ''; 
+        document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // CORSブロック回避用のプロキシ設定
+        // 新しい安定プロキシサービスに変更
         const TARGET_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
-        const API_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
+        const API_URL = `https://corsproxy.io/?${encodeURIComponent(TARGET_URL)}`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
@@ -123,21 +115,19 @@
             { id: 'mmr-d1', x: 715, y: 54 }
         ];
 
-        // 判定用にすべて小文字で定義
         const rankMap = {
-            'iron': 'Rank_1_Iron.png',
-            'bronze': 'Rank_2_Bronze.png',
-            'silver': 'Rank_3_Silver.png',
-            'gold': 'Rank_4_Gold.png',
-            'platinum': 'Rank_5_Platinum.png',
-            'sapphire': 'Rank_6_Sapphire.png',
-            'ruby': 'Rank_7_Ruby.png',
-            'diamond': 'Rank_8_Diamond.png',
-            'master': 'Rank_9_Master.png',
+            'iron': 'Rank_1_Iron.png', 'bronze': 'Rank_2_Bronze.png', 'silver': 'Rank_3_Silver.png',
+            'gold': 'Rank_4_Gold.png', 'platinum': 'Rank_5_Platinum.png', 'sapphire': 'Rank_6_Sapphire.png',
+            'ruby': 'Rank_7_Ruby.png', 'diamond': 'Rank_8_Diamond.png', 'master': 'Rank_9_Master.png',
             'grandmaster': 'Rank_10_Grandmaster.png'
         };
 
-        // 【新機能】届いたデータのキーをすべて自動で小文字にする魔法の関数
+        function setStatus(msg) {
+            const el = document.getElementById('db-status');
+            el.innerHTML += "<br>➔ " + msg;
+            el.scrollTop = el.scrollHeight;
+        }
+
         function toLowerCaseKeys(obj) {
             if (Array.isArray(obj)) return obj.map(toLowerCaseKeys);
             if (obj !== null && typeof obj === 'object') {
@@ -154,21 +144,33 @@
             fetchData();
             setInterval(fetchData, 2 * 60 * 1000); 
             setInterval(checkPageSwitchStatus, 1000); 
+        } else {
+            setStatus("❌ エラー: URLの末尾に ?name=〇〇 がありません。入力ページからやり直してください。");
         }
 
         async function fetchData() {
             try {
+                setStatus("API通信を開始します...");
                 const response = await fetch(API_URL);
-                if (!response.ok) return;
+                
+                setStatus("通信ステータス: " + response.status);
+                if (!response.ok) {
+                    setStatus("❌ 通信ブロックまたはエラーが発生しました。");
+                    return;
+                }
+                
                 const rawData = await response.json();
-                if (!rawData) return;
+                setStatus("データ受信成功！ 文字数: " + JSON.stringify(rawData).length);
+                
+                // 生データの一部を表示して確認
+                setStatus("生データ先頭: " + JSON.stringify(rawData).substring(0, 80));
 
-                // ここでデータをすべて小文字に変換！大文字小文字の差を無くします
                 const data = toLowerCaseKeys(rawData);
-
-                // 以降、データの指定はすべて【小文字】で統一
+                
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
-                const rankName = data.rank || 'iron';
+                const rankName = data.rank || '未取得';
+                setStatus(`解析結果 ➔ MMR: ${newMmr}, ランク: ${rankName}`);
+
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
                 if (displayedMmr === 0 && newMmr !== 0) {
@@ -177,16 +179,15 @@
                     updateMmrDisplay(displayedMmr);
                     updateRankDisplay(rankName);
                     if (latestMatch) updateMatchDisplay(latestMatch);
+                    setStatus("✅ 画面への初回描画指示を出しました。");
                     return;
                 }
 
                 if (newMmr !== targetMmr) {
                     targetMmr = newMmr;
                     lastUpdateTimestamp = Date.now();
-
                     startMmrAnimation();
                     updateRankDisplay(rankName);
-
                     if (latestMatch) {
                         const reasonStr = latestMatch.reason ? String(latestMatch.reason).toLowerCase() : '';
                         if (reasonStr.includes('table')) {
@@ -194,10 +195,12 @@
                         }
                     }
                     startPageSwitchLoop();
+                    setStatus("🔄 MMR更新を検知、アニメーションを開始します。");
                 }
 
             } catch (error) {
-                console.error("データ取得エラー:", error);
+                setStatus("❌ 例外エラーが発生しました: " + error.message);
+                console.error(error);
             }
         }
 
@@ -205,23 +208,16 @@
         function updateMmrDisplay(val) {
             const str = String(val).padStart(5, '0');
             const digits = str.split('');
-
             for (let i = 0; i < 5; i++) {
                 const digit = digits[i];
                 const imgEl = document.getElementById(mmrPositions[i].id);
                 const pos = mmrPositions[i];
-
                 imgEl.src = `mmr_${digit}.png`;
                 imgEl.style.display = 'block';
-
                 if (digit === '6') {
-                    imgEl.style.height = '188px';
-                    imgEl.style.left = `${pos.x - 5}px`;
-                    imgEl.style.top = `${pos.y - 8}px`;
+                    imgEl.style.height = '188px'; imgEl.style.left = `${pos.x - 5}px`; imgEl.style.top = `${pos.y - 8}px`;
                 } else {
-                    imgEl.style.height = '180px';
-                    imgEl.style.left = `${pos.x}px`;
-                    imgEl.style.top = `${pos.y}px`;
+                    imgEl.style.height = '180px'; imgEl.style.left = `${pos.x}px`; imgEl.style.top = `${pos.y}px`;
                 }
             }
         }
@@ -231,20 +227,15 @@
             let fileName = rankMap[lowRankName];
             if (!fileName) {
                 for (const key in rankMap) {
-                    if (lowRankName.includes(key)) {
-                        fileName = rankMap[key];
-                        break;
-                    }
+                    if (lowRankName.includes(key)) { fileName = rankMap[key]; break; }
                 }
             }
             if (!fileName) fileName = 'Rank_1_Iron.png';
-
             document.getElementById('p1-rank').src = fileName;
             document.getElementById('p2-rank').src = fileName;
         }
 
         function updateMatchDisplay(match) {
-            // ここもすべて【小文字】でデータを受け取る
             const delta = match.mmrdelta !== undefined ? match.mmrdelta : 0;
             const score = match.score !== undefined ? match.score : 0;
             const tier = match.tier || '';
@@ -254,7 +245,6 @@
             document.getElementById('p2-diff-sign').src = signSrc;
 
             const absDeltaStr = String(Math.abs(delta)).split('');
-
             setDiffDigits(['p1-diff-1', 'p1-diff-2', 'p1-diff-3'], absDeltaStr);
             setDiffDigits(['p2-diff-1', 'p2-diff-2', 'p2-diff-3'], absDeltaStr);
 
@@ -266,86 +256,52 @@
             const t2 = document.getElementById('tier-char2');
 
             if (tierChars[0]) {
-                t1.src = `Tier_${tierChars[0]}.png`;
-                t1.style.display = 'block';
+                t1.src = `Tier_${tierChars[0]}.png`; t1.style.display = 'block';
                 t1.style.height = (tierChars[0] === 'Q') ? '101px' : '95px';
-            } else {
-                t1.style.display = 'none';
-            }
+            } else { t1.style.display = 'none'; }
 
             if (tierChars[1]) {
-                t2.src = `Tier_${tierChars[1]}.png`;
-                t2.style.display = 'block';
+                t2.src = `Tier_${tierChars[1]}.png`; t2.style.display = 'block';
                 t2.style.height = (tierChars[1] === 'Q') ? '101px' : '95px';
-            } else {
-                t2.style.display = 'none';
-            }
+            } else { t2.style.display = 'none'; }
         }
 
         function setDiffDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
-                if (digitArray[i] !== undefined) {
-                    el.src = `D_${digitArray[i]}.png`;
-                    el.style.display = 'block';
-                } else {
-                    el.style.display = 'none';
-                }
+                if (digitArray[i] !== undefined) { el.src = `D_${digitArray[i]}.png`; el.style.display = 'block'; }
+                else { el.style.display = 'none'; }
             }
         }
 
         function setScoreDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
-                if (digitArray[i] !== undefined) {
-                    el.src = `mmr_${digitArray[i]}.png`;
-                    el.style.display = 'block';
-                } else {
-                    el.style.display = 'none';
-                }
+                if (digitArray[i] !== undefined) { el.src = `mmr_${digitArray[i]}.png`; el.style.display = 'block'; }
+                else { el.style.display = 'none'; }
             }
         }
 
-        // ==================== アニメーション ====================
         function startMmrAnimation() {
             if (mmrAnimationInterval) clearInterval(mmrAnimationInterval);
-
             mmrAnimationInterval = setInterval(() => {
-                if (displayedMmr < targetMmr) {
-                    displayedMmr++;
-                    updateMmrDisplay(displayedMmr);
-                } else if (displayedMmr > targetMmr) {
-                    displayedMmr--;
-                    updateMmrDisplay(displayedMmr);
-                } else {
-                    clearInterval(mmrAnimationInterval);
-                    mmrAnimationInterval = null;
-                }
+                if (displayedMmr < targetMmr) { displayedMmr++; updateMmrDisplay(displayedMmr); }
+                else if (displayedMmr > targetMmr) { displayedMmr--; updateMmrDisplay(displayedMmr); }
+                else { clearInterval(mmrAnimationInterval); mmrAnimationInterval = null; }
             }, 25);
         }
 
         function startPageSwitchLoop() {
             if (pageSwitchInterval) clearInterval(pageSwitchInterval);
-
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
-
             pageSwitchInterval = setInterval(() => {
                 if (Date.now() - lastUpdateTimestamp > 10 * 60 * 1000) {
-                    clearInterval(pageSwitchInterval);
-                    pageSwitchInterval = null;
-                    page1.classList.add('active');
-                    page2.classList.remove('active');
-                    return;
+                    clearInterval(pageSwitchInterval); pageSwitchInterval = null;
+                    page1.classList.add('active'); page2.classList.remove('active'); return;
                 }
-
-                if (page1.classList.contains('active')) {
-                    page1.classList.remove('active');
-                    page2.classList.add('active');
-                } else {
-                    page2.classList.remove('active');
-                    page1.classList.add('active');
-                }
+                if (page1.classList.contains('active')) { page1.classList.remove('active'); page2.classList.add('active'); }
+                else { page2.classList.remove('active'); page1.classList.add('active'); }
             }, 10 * 1000);
         }
 
@@ -353,10 +309,7 @@
             if (lastUpdateTimestamp > 0 && (Date.now() - lastUpdateTimestamp > 10 * 60 * 1000)) {
                 const page1 = document.getElementById('page1');
                 const page2 = document.getElementById('page2');
-                if (!page1.classList.contains('active')) {
-                    page1.classList.add('active');
-                    page2.classList.remove('active');
-                }
+                if (!page1.classList.contains('active')) { page1.classList.add('active'); page2.classList.remove('active'); }
             }
         }
     </script>
