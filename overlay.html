@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay (AllOrigins Ver)</title>
+    <title>MKWorld Lounge Overlay (Render Rewrite Ver)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -97,9 +97,8 @@
         const PLAYER_NAME = urlParams.get('name') || ''; 
         document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // ★変更点：スマホのセキュリティを通り抜けやすい AllOrigins の raw API を使用
-        const TARGET_URL = `https://lounge.mkcentral.com/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
-        const API_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
+        // ★最強の解決策：RenderのRewrite機能を使って、自分のサイト経由で安全にデータを取る
+        const API_URL = `/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
@@ -149,7 +148,7 @@
 
         async function fetchData() {
             try {
-                setStatus("AllOrigins経由で通信を開始します...");
+                setStatus("Render Rewrite経由で通信を開始します...");
                 const response = await fetch(API_URL);
                 
                 setStatus("通信ステータス: " + response.status);
