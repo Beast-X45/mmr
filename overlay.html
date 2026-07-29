@@ -98,7 +98,7 @@
         document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
         // ★最強の解決策：RenderのRewrite機能を使って、自分のサイト経由で安全にデータを取る
-        const API_URL = `/api/player/datalis?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
+        const API_URL = `/api/player/details?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
