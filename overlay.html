@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MKWorld Lounge Overlay (Render Rewrite Ver)</title>
+    <title>MKWorld Lounge Overlay</title>
     <style>
         * {
             box-sizing: border-box;
@@ -62,7 +62,7 @@
             <img id="mmr-d2" class="layer-img" src="" alt="">
             <img id="mmr-d1" class="layer-img" src="" alt="">
             <img class="layer-img" src="word_Last.png" style="left:930px; top:60px; height:70px;" alt="Last">
-            <img id="p1-diff-sign" class="layer-img" style="left:930px; top:150px; height:50px;" src="" alt="">
+            <img id="p1-diff-sign" class="layer-img" style="left:915px; top:150px; height:50px;" src="" alt="">
             <img id="p1-diff-1" class="layer-img" style="left:960px; top:140px; height:80px;" src="" alt="">
             <img id="p1-diff-2" class="layer-img" style="left:1010px; top:140px; height:80px;" src="" alt="">
             <img id="p1-diff-3" class="layer-img" style="left:1060px; top:140px; height:80px;" src="" alt="">
@@ -79,32 +79,26 @@
             <img id="score-d10"  class="layer-img" style="left:350px; top:150px; height:100px;" src="" alt="">
             <img id="score-d1"   class="layer-img" style="left:420px; top:150px; height:100px;" src="" alt="">
             <img class="layer-img" src="word_pts.png" style="left:495px; top:175px; height:80px;" alt="pts">
-            <img id="p2-diff-sign" class="layer-img" style="left:735px; top:175px; height:50px;" src="" alt="">
+            <img id="p2-diff-sign" class="layer-img" style="left:720px; top:175px; height:50px;" src="" alt="">
             <img id="p2-diff-1" class="layer-img" style="left:780px; top:160px; height:80px;" src="" alt="">
             <img id="p2-diff-2" class="layer-img" style="left:830px; top:160px; height:80px;" src="" alt="">
             <img id="p2-diff-3" class="layer-img" style="left:890px; top:160px; height:80px;" src="" alt="">
             <img class="layer-img" src="word_mmr.png" style="left:945px; top:175px; height:65px;" alt="mmr">
         </div>
-    </div>
 
-    <div id="debug-board" style="position: absolute; bottom: 0; left: 0; width: 1200px; height: 110px; background: rgba(0,0,0,0.9); color: #00ff00; font-family: monospace; font-size: 14px; padding: 10px; z-index: 10000; box-sizing: border-box; overflow-y: auto; border-top: 2px solid #00ff00;">
-        [DEBUG] 名前: <span id="db-name">未設定</span>
-        <div id="db-status">システム起動中...</div>
+        <div id="error-screen" style="display: none; position: absolute; top: 0; left: 0; width: 1200px; height: 300px; color: #ff3333; font-family: 'Arial Black', 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 130px; font-weight: bold; text-align: center; line-height: 300px; z-index: 20000; text-shadow: 6px 6px 0px #000;">ERROR</div>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const PLAYER_NAME = urlParams.get('name') || ''; 
-        document.getElementById('db-name').innerText = PLAYER_NAME ? PLAYER_NAME : "❌名前がURLにありません";
 
-        // ★最強の解決策：RenderのRewrite機能を使って、自分のサイト経由で安全にデータを取る
         const API_URL = `/api/player/details?name=${encodeURIComponent(PLAYER_NAME)}&game=mkworld24p`;
 
         let displayedMmr = 0;
         let targetMmr = 0;
         let mmrAnimationInterval = null;
         let pageSwitchInterval = null;
-        let lastUpdateTimestamp = 0;
 
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
@@ -121,12 +115,6 @@
             'grandmaster': 'Rank_10_Grandmaster.png'
         };
 
-        function setStatus(msg) {
-            const el = document.getElementById('db-status');
-            el.innerHTML += "<br>➔ " + msg;
-            el.scrollTop = el.scrollHeight;
-        }
-
         function toLowerCaseKeys(obj) {
             if (Array.isArray(obj)) return obj.map(toLowerCaseKeys);
             if (obj !== null && typeof obj === 'object') {
@@ -141,30 +129,27 @@
         if (PLAYER_NAME) {
             fetchData();
             setInterval(fetchData, 2 * 60 * 1000); 
-            setInterval(checkPageSwitchStatus, 1000); 
         } else {
-            setStatus("❌ エラー: URLの末尾に ?name=〇〇 がありません。");
+            showError();
         }
 
         async function fetchData() {
             try {
-                setStatus("Render Rewrite経由で通信を開始します...");
                 const response = await fetch(API_URL);
                 
-                setStatus("通信ステータス: " + response.status);
                 if (!response.ok) {
-                    setStatus("❌ 通信エラーが発生しました。");
+                    showError();
                     return;
                 }
                 
                 const rawData = await response.json();
-                setStatus("データ受信成功！文字数: " + JSON.stringify(rawData).length);
-
                 const data = toLowerCaseKeys(rawData);
+                
+                // 正常に取得できたらエラー画面を隠す
+                hideError();
+
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
                 const rankName = data.rank || '未取得';
-                setStatus(`解析結果 ➔ MMR: ${newMmr}, ランク: ${rankName}`);
-
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
                 if (displayedMmr === 0 && newMmr !== 0) {
@@ -173,13 +158,12 @@
                     updateMmrDisplay(displayedMmr);
                     updateRankDisplay(rankName);
                     if (latestMatch) updateMatchDisplay(latestMatch);
-                    setStatus("✅ 画面への描画指示が完了しました！");
+                    startPageSwitchLoop();
                     return;
                 }
 
                 if (newMmr !== targetMmr) {
                     targetMmr = newMmr;
-                    lastUpdateTimestamp = Date.now();
                     startMmrAnimation();
                     updateRankDisplay(rankName);
                     if (latestMatch) {
@@ -192,23 +176,47 @@
                 }
 
             } catch (error) {
-                setStatus("❌ エラー: " + error.message);
+                showError();
+            }
+        }
+
+        function showError() {
+            document.getElementById('error-screen').style.display = 'block';
+            document.getElementById('page1').classList.remove('active');
+            document.getElementById('page2').classList.remove('active');
+            if (pageSwitchInterval) {
+                clearInterval(pageSwitchInterval);
+                pageSwitchInterval = null;
+            }
+        }
+
+        function hideError() {
+            document.getElementById('error-screen').style.display = 'none';
+            // エラーから復帰した際にページ1を再表示
+            if (!document.getElementById('page1').classList.contains('active') && !document.getElementById('page2').classList.contains('active')) {
+                document.getElementById('page1').classList.add('active');
             }
         }
 
         function updateMmrDisplay(val) {
             const str = String(val).padStart(5, '0');
             const digits = str.split('');
+            let keepZero = false;
+            
             for (let i = 0; i < 5; i++) {
                 const digit = digits[i];
                 const imgEl = document.getElementById(mmrPositions[i].id);
                 const pos = mmrPositions[i];
-                imgEl.src = `mmr_${digit}.png`;
-                imgEl.style.display = 'block';
-                if (digit === '6') {
-                    imgEl.style.height = '188px'; imgEl.style.left = `${pos.x - 5}px`; imgEl.style.top = `${pos.y - 8}px`;
+                
+                if (i === 4 || digit !== '0' || keepZero) {
+                    keepZero = true;
+                    imgEl.src = `mmr_${digit}.png`;
+                    imgEl.style.display = 'block';
+                    imgEl.style.height = '180px'; 
+                    imgEl.style.left = `${pos.x}px`; 
+                    imgEl.style.top = `${pos.y}px`;
                 } else {
-                    imgEl.style.height = '180px'; imgEl.style.left = `${pos.x}px`; imgEl.style.top = `${pos.y}px`;
+                    imgEl.style.display = 'none';
                 }
             }
         }
@@ -287,21 +295,12 @@
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
             pageSwitchInterval = setInterval(() => {
-                if (Date.now() - lastUpdateTimestamp > 10 * 60 * 1000) {
-                    clearInterval(pageSwitchInterval); pageSwitchInterval = null;
-                    page1.classList.add('active'); page2.classList.remove('active'); return;
-                }
+                // エラー表示中はページ切り替えを行わない
+                if (document.getElementById('error-screen').style.display === 'block') return;
+                
                 if (page1.classList.contains('active')) { page1.classList.remove('active'); page2.classList.add('active'); }
                 else { page2.classList.remove('active'); page1.classList.add('active'); }
             }, 10 * 1000);
-        }
-
-        function checkPageSwitchStatus() {
-            if (lastUpdateTimestamp > 0 && (Date.now() - lastUpdateTimestamp > 10 * 60 * 1000)) {
-                const page1 = document.getElementById('page1');
-                const page2 = document.getElementById('page2');
-                if (!page1.classList.contains('active')) { page1.classList.add('active'); page2.classList.remove('active'); }
-            }
         }
     </script>
 </body>
