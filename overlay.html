@@ -25,17 +25,20 @@
             background-position: center;
         }
 
-        /* ページ共通設定 */
+        /* ★変更点：ページ切替を1秒かけてふわっとフェードイン/アウト */
         .page {
             position: absolute;
             top: 0;
             left: 0;
             width: 1200px;
             height: 300px;
-            display: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
         }
         .page.active {
-            display: block;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .layer-img {
@@ -48,6 +51,26 @@
             top: 25px;
             height: 240px;
             width: auto;
+        }
+
+        /* ★変更点：ランク変動時に上から降ってくる特殊アニメーション */
+        @keyframes rankDropIn {
+            0% {
+                transform: translateY(-260px);
+                opacity: 0;
+            }
+            70% {
+                transform: translateY(15px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .rank-animate {
+            animation: rankDropIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
     </style>
 </head>
@@ -99,6 +122,7 @@
         let targetMmr = 0;
         let mmrAnimationInterval = null;
         let pageSwitchInterval = null;
+        let currentRankFile = ''; // 現在表示しているランク画像のファイル名を記憶
 
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
@@ -145,7 +169,6 @@
                 const rawData = await response.json();
                 const data = toLowerCaseKeys(rawData);
                 
-                // 正常に取得できたらエラー画面を隠す
                 hideError();
 
                 const newMmr = data.mmr !== undefined ? data.mmr : 0;
@@ -192,7 +215,6 @@
 
         function hideError() {
             document.getElementById('error-screen').style.display = 'none';
-            // エラーから復帰した際にページ1を再表示
             if (!document.getElementById('page1').classList.contains('active') && !document.getElementById('page2').classList.contains('active')) {
                 document.getElementById('page1').classList.add('active');
             }
@@ -230,8 +252,28 @@
                 }
             }
             if (!fileName) fileName = 'Rank_1_Iron.png';
-            document.getElementById('p1-rank').src = fileName;
-            document.getElementById('p2-rank').src = fileName;
+
+            const r1 = document.getElementById('p1-rank');
+            const r2 = document.getElementById('p2-rank');
+
+            // ランクが変わった場合の特殊落下アニメーション演出（初回以降）
+            if (currentRankFile && currentRankFile !== fileName) {
+                r1.src = fileName;
+                r2.src = fileName;
+
+                // アニメーションクラスをリセットして再適用
+                r1.classList.remove('rank-animate');
+                r2.classList.remove('rank-animate');
+                void r1.offsetWidth; // リフロー発生させてアニメーションをやり直す
+                void r2.offsetWidth;
+                r1.classList.add('rank-animate');
+                r2.classList.add('rank-animate');
+            } else {
+                r1.src = fileName;
+                r2.src = fileName;
+            }
+
+            currentRankFile = fileName;
         }
 
         function updateMatchDisplay(match) {
@@ -295,7 +337,6 @@
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
             pageSwitchInterval = setInterval(() => {
-                // エラー表示中はページ切り替えを行わない
                 if (document.getElementById('error-screen').style.display === 'block') return;
                 
                 if (page1.classList.contains('active')) { page1.classList.remove('active'); page2.classList.add('active'); }
