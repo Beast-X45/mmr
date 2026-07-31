@@ -25,7 +25,7 @@
             background-position: center;
         }
 
-        /* ★変更点：ページ切替を1秒かけてふわっとフェードイン/アウト */
+        /* ページ切替を1秒かけてふわっとフェードイン/アウト */
         .page {
             position: absolute;
             top: 0;
@@ -53,7 +53,7 @@
             width: auto;
         }
 
-        /* ★変更点：ランク変動時に上から降ってくる特殊アニメーション */
+        /* ランク変動時に上から降ってくる特殊アニメーション */
         @keyframes rankDropIn {
             0% {
                 transform: translateY(-260px);
@@ -122,7 +122,7 @@
         let targetMmr = 0;
         let mmrAnimationInterval = null;
         let pageSwitchInterval = null;
-        let currentRankFile = ''; // 現在表示しているランク画像のファイル名を記憶
+        let currentRankFile = ''; 
 
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
@@ -175,16 +175,28 @@
                 const rankName = data.rank || '未取得';
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
+                // ★ 初回読み込み時の処理
                 if (displayedMmr === 0 && newMmr !== 0) {
-                    displayedMmr = newMmr;
-                    targetMmr = newMmr;
-                    updateMmrDisplay(displayedMmr);
+                    if (latestMatch && latestMatch.mmrdelta !== undefined) {
+                        // 直近の変動値から「1つ前のMMR」を逆算して、そこからアニメーションをスタート
+                        displayedMmr = newMmr - latestMatch.mmrdelta;
+                        targetMmr = newMmr;
+                        updateMmrDisplay(displayedMmr);
+                        startMmrAnimation();
+                    } else {
+                        // 履歴がない場合はそのままパッと表示
+                        displayedMmr = newMmr;
+                        targetMmr = newMmr;
+                        updateMmrDisplay(displayedMmr);
+                    }
+                    
                     updateRankDisplay(rankName);
                     if (latestMatch) updateMatchDisplay(latestMatch);
                     startPageSwitchLoop();
                     return;
                 }
 
+                // 2回目以降の自動更新処理
                 if (newMmr !== targetMmr) {
                     targetMmr = newMmr;
                     startMmrAnimation();
@@ -256,15 +268,12 @@
             const r1 = document.getElementById('p1-rank');
             const r2 = document.getElementById('p2-rank');
 
-            // ランクが変わった場合の特殊落下アニメーション演出（初回以降）
             if (currentRankFile && currentRankFile !== fileName) {
                 r1.src = fileName;
                 r2.src = fileName;
-
-                // アニメーションクラスをリセットして再適用
                 r1.classList.remove('rank-animate');
                 r2.classList.remove('rank-animate');
-                void r1.offsetWidth; // リフロー発生させてアニメーションをやり直す
+                void r1.offsetWidth; 
                 void r2.offsetWidth;
                 r1.classList.add('rank-animate');
                 r2.classList.add('rank-animate');
