@@ -2,71 +2,108 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MKWorld Lounge Overlay Setup</title>
     <style>
         body {
-            font-family: sans-serif;
             background-color: #1a1a2e;
             color: #ffffff;
+            font-family: 'Hiragino Kaku Gothic ProN', 'Segoe UI', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
-            background-color: #16213e;
+            background: #16213e;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             text-align: center;
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
         }
         h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            margin-bottom: 20px;
+            background: #e94560;
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            text-shadow: none;
         }
-        p {
-            font-size: 14px;
-            color: #a0a0b0;
-            margin-bottom: 25px;
-        }
-        input[type="text"] {
+        input {
             width: 100%;
             padding: 12px;
-            font-size: 16px;
-            border: none;
-            border-radius: 6px;
             margin-bottom: 20px;
-            box-sizing: border-box;
-            background-color: #0f3460;
+            border: 2px solid #0f3460;
+            border-radius: 6px;
+            background: #1a1a2e;
             color: white;
+            font-size: 16px;
+            box-sizing: border-box;
         }
-        input[type="text"]::placeholder {
-            color: #888;
+        input:focus {
+            outline: none;
+            border-color: #e94560;
         }
         button {
             width: 100%;
             padding: 14px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
             background-color: #e94560;
+            color: white;
             border: none;
             border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
         button:hover {
-            background-color: #d83a52;
+            background-color: #d13d56;
         }
-        #result {
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        #message {
             margin-top: 20px;
-            font-size: 12px;
-            color: #4ade80;
-            word-break: break-all;
+            font-weight: bold;
+            font-size: 15px;
             min-height: 20px;
+        }
+        .success { color: #4caf50; }
+        .error { color: #ff3333; }
+        .loading { color: #ffeb3b; }
+
+        /* 使い方セクションのデザイン */
+        .how-to-use {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .how-to-use h2 {
+            font-size: 16px;
+            color: #e94560;
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 5px;
+        }
+        .how-to-use ol {
+            margin-left: 0;
+            padding-left: 20px;
+        }
+        .how-to-use li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -74,42 +111,67 @@
 
     <div class="container">
         <h1>Overlay Setup</h1>
-        <p>ラウンジ名を入力してURLを生成します</p>
+        <p style="margin-bottom: 20px; font-size: 14px; color: #aaa;">
+            ラウンジネームを入力してください。
+        </p>
         
-        <input type="text" id="playerName" placeholder="ラウンジ名を入力 (例: Kusaan)">
-        <button onclick="generateAndCopy()">URLを生成してコピー</button>
+        <input type="text" id="playerName" placeholder="プレイヤー名 (例: Satoshi)">
+        <button id="generateBtn" onclick="generateAndCopy()">URLを生成してコピー</button>
         
-        <div id="result"></div>
-    </div>
+        <div id="message"></div>
+
+        <div class="how-to-use">
+            <h2>使い方</h2>
+            <ol>
+                <li>上の入力欄に、<strong>正確なラウンジネームの</strong>を入力します。</li>
+                <li>「URLを生成してコピー」ボタンを押します。</li>
+                <li>URLがコピーできたら、配信ソフトのブラウザソース欄に高さ○○○,幅○○○を指定して、お好みの位置に配置して完了です！<li>
+            </ol>
+            <p style="margin-top: 10px; font-size: 12px; color: #888;">
+                ※プレイヤー名が存在しない場合や入力ミスがある場合は、エラーが表示されます。
+            </p>
+        </div>
+        </div>
 
     <script>
-        function generateAndCopy() {
+        async function generateAndCopy() {
             const nameInput = document.getElementById('playerName').value.trim();
-            const resultDiv = document.getElementById('result');
+            const btn = document.getElementById('generateBtn');
 
             if (!nameInput) {
-                resultDiv.style.color = '#ff6b6b';
-                resultDiv.innerText = '⚠️ ラウンジ名を入力してください';
+                showMessage('ラウンジネームを入力してください。', 'error');
                 return;
             }
 
-            // 現在のページのURLを取得して、ベース部分を作る
-            // (末尾の / や index.html を取り除く)
-            let baseUrl = window.location.href.split('?')[0];
-            baseUrl = baseUrl.replace(/\/index\.html$/, '').replace(/\/$/, '');
+            btn.disabled = true;
+            showMessage('プレイヤー情報を取得中...', 'loading');
 
-            // オーバーレイ用のURLを生成
-            const overlayUrl = `${baseUrl}/overlay.html?name=${encodeURIComponent(nameInput)}`;
+            const API_URL = `/api/player/details?name=${encodeURIComponent(nameInput)}&game=mkworld24p`;
 
-            // クリップボードにコピー
-            navigator.clipboard.writeText(overlayUrl).then(() => {
-                resultDiv.style.color = '#4ade80';
-                resultDiv.innerHTML = `✅ コピー完了！<br>ブラウザソースに貼り付けてください。<br><br><span style="color:#a0a0b0; font-size:10px;">${overlayUrl}</span>`;
-            }).catch(err => {
-                resultDiv.style.color = '#ff6b6b';
-                resultDiv.innerText = '❌ コピーに失敗しました。';
-                console.error('Clipboard copy failed:', err);
-            });
+            try {
+                const response = await fetch(API_URL);
+
+                if (!response.ok) {
+                    showMessage('Player not found', 'error');
+                    btn.disabled = false;
+                    return;
+                }
+
+                const overlayUrl = `${window.location.origin}/overlay.html?name=${encodeURIComponent(nameInput)}`;
+                await navigator.clipboard.writeText(overlayUrl);
+                
+                showMessage('URLをコピーしました！', 'success');
+            } catch (error) {
+                showMessage('エラーが発生しました', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function showMessage(text, type) {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.className = type;
         }
     </script>
 
