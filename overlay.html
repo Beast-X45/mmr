@@ -175,16 +175,13 @@
                 const rankName = data.rank || '未取得';
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
-                // ★ 初回読み込み時の処理
                 if (displayedMmr === 0 && newMmr !== 0) {
                     if (latestMatch && latestMatch.mmrdelta !== undefined) {
-                        // 直近の変動値から「1つ前のMMR」を逆算して、そこからアニメーションをスタート
                         displayedMmr = newMmr - latestMatch.mmrdelta;
                         targetMmr = newMmr;
                         updateMmrDisplay(displayedMmr);
                         startMmrAnimation();
                     } else {
-                        // 履歴がない場合はそのままパッと表示
                         displayedMmr = newMmr;
                         targetMmr = newMmr;
                         updateMmrDisplay(displayedMmr);
@@ -196,7 +193,6 @@
                     return;
                 }
 
-                // 2回目以降の自動更新処理
                 if (newMmr !== targetMmr) {
                     targetMmr = newMmr;
                     startMmrAnimation();
@@ -246,9 +242,15 @@
                     keepZero = true;
                     imgEl.src = `mmr_${digit}.png`;
                     imgEl.style.display = 'block';
-                    imgEl.style.height = '180px'; 
                     imgEl.style.left = `${pos.x}px`; 
                     imgEl.style.top = `${pos.y}px`;
+                    
+                    // ★1ページ目の「6」の高さ個別設定
+                    if (digit === '6') {
+                        imgEl.style.height = '175px';
+                    } else {
+                        imgEl.style.height = '180px';
+                    }
                 } else {
                     imgEl.style.display = 'none';
                 }
@@ -324,10 +326,21 @@
             }
         }
 
+        // ★2ページ目のスコア数字「6」の高さ個別設定
         function setScoreDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
-                if (digitArray[i] !== undefined) { el.src = `mmr_${digitArray[i]}.png`; el.style.display = 'block'; }
+                const digit = digitArray[i];
+                if (digit !== undefined) { 
+                    el.src = `mmr_${digit}.png`; 
+                    el.style.display = 'block'; 
+                    
+                    if (digit === '6') {
+                        el.style.height = '97px';
+                    } else {
+                        el.style.height = '100px';
+                    }
+                }
                 else { el.style.display = 'none'; }
             }
         }
