@@ -121,8 +121,9 @@
         let displayedMmr = 0;
         let targetMmr = 0;
         let mmrAnimationInterval = null;
-        let pageSwitchInterval = null;
+        let pageSwitchTimeout = null; // ★setTimeoutに変更
         let currentRankFile = ''; 
+        let dataFetchedTime = null; // ★データを受信した時刻を記録する変数
 
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
@@ -176,6 +177,9 @@
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
                 if (displayedMmr === 0 && newMmr !== 0) {
+                    // ★ 最初のデータ受信成功時に時刻を記録
+                    dataFetchedTime = Date.now();
+
                     if (latestMatch && latestMatch.mmrdelta !== undefined) {
                         displayedMmr = newMmr - latestMatch.mmrdelta;
                         targetMmr = newMmr;
@@ -194,6 +198,9 @@
                 }
 
                 if (newMmr !== targetMmr) {
+                    // ★ MMRが変動（更新）された場合も、そこから新たに15分を測り直すため時刻を更新
+                    dataFetchedTime = Date.now();
+                    
                     targetMmr = newMmr;
                     startMmrAnimation();
                     updateRankDisplay(rankName);
@@ -215,9 +222,9 @@
             document.getElementById('error-screen').style.display = 'block';
             document.getElementById('page1').classList.remove('active');
             document.getElementById('page2').classList.remove('active');
-            if (pageSwitchInterval) {
-                clearInterval(pageSwitchInterval);
-                pageSwitchInterval = null;
+            if (pageSwitchTimeout) {
+                clearTimeout(pageSwitchTimeout);
+                pageSwitchTimeout = null;
             }
         }
 
@@ -245,7 +252,6 @@
                     imgEl.style.left = `${pos.x}px`; 
                     imgEl.style.top = `${pos.y}px`;
                     
-                    // ★1ページ目の「6」の高さ個別設定
                     if (digit === '6') {
                         imgEl.style.height = '175px';
                     } else {
@@ -326,7 +332,6 @@
             }
         }
 
-        // ★2ページ目のスコア数字「6」の高さ個別設定
         function setScoreDigits(elementIds, digitArray) {
             for (let i = 0; i < elementIds.length; i++) {
                 const el = document.getElementById(elementIds[i]);
@@ -335,11 +340,8 @@
                     el.src = `mmr_${digit}.png`; 
                     el.style.display = 'block'; 
                     
-                    if (digit === '6') {
-                        el.style.height = '97px';
-                    } else {
-                        el.style.height = '100px';
-                    }
+                    if (digit === '6') { el.style.height = '97px'; }
+                    else { el.style.height = '100px'; }
                 }
                 else { el.style.display = 'none'; }
             }
@@ -354,16 +356,40 @@
             }, 25);
         }
 
+        // ★可変タイムアウトによるループ制御に変更
         function startPageSwitchLoop() {
-            if (pageSwitchInterval) clearInterval(pageSwitchInterval);
+            if (pageSwitchTimeout) clearTimeout(pageSwitchTimeout);
+            
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
-            pageSwitchInterval = setInterval(() => {
+
+            function tick() {
                 if (document.getElementById('error-screen').style.display === 'block') return;
-                
-                if (page1.classList.contains('active')) { page1.classList.remove('active'); page2.classList.add('active'); }
-                else { page2.classList.remove('active'); page1.classList.add('active'); }
-            }, 10 * 1000);
+
+                // ★データ受信（または更新）から15分（15 * 60 * 1000ミリ秒）が経過しているかチェック
+                if (dataFetchedTime && (Date.now() - dataFetchedTime > 15 * 60 * 1000)) {
+                    // 15分経っていたら強制的にページ1（MMR）を表示し、ループを終了する
+                    page2.classList.remove('active');
+                    page1.classList.add('active');
+                    pageSwitchTimeout = null;
+                    return; 
+                }
+
+                if (page1.classList.contains('active')) {
+                    // ページ1からページ2へ（ページ1は10秒間表示）
+                    page1.classList.remove('active');
+                    page2.classList.add('active');
+                    pageSwitchTimeout = setTimeout(tick, 7 * 1000); // 次は7秒後に実行
+                } else {
+                    // ページ2からページ1へ（ページ2は7秒間表示）
+                    page2.classList.remove('active');
+                    page1.classList.add('active');
+                    pageSwitchTimeout = setTimeout(tick, 10 * 1000); // 次は10秒後に実行
+                }
+            }
+
+            // 最初の切り替えトリガー（最初はページ1が表示されているので10秒待つ）
+            pageSwitchTimeout = setTimeout(tick, 10 * 1000);
         }
     </script>
 </body>
