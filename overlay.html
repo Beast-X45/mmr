@@ -10,12 +10,12 @@
             padding: 0;
         }
         body {
-            background-color: transparent; /* OBS透過用 */
+            background-color: transparent; 
             overflow: hidden;
             font-family: sans-serif;
         }
 
-        /* 全体コンテナ (1200x300px) */
+        
         #overlay {
             position: relative;
             width: 1200px;
@@ -25,7 +25,7 @@
             background-position: center;
         }
 
-        /* ページ切替を1秒かけてふわっとフェードイン/アウト */
+        
         .page {
             position: absolute;
             top: 0;
@@ -53,7 +53,7 @@
             width: auto;
         }
 
-        /* ランク変動時に上から降ってくる特殊アニメーション */
+
         @keyframes rankDropIn {
             0% {
                 transform: translateY(-260px);
@@ -121,9 +121,9 @@
         let displayedMmr = 0;
         let targetMmr = 0;
         let mmrAnimationInterval = null;
-        let pageSwitchTimeout = null; // ★setTimeoutに変更
+        let pageSwitchTimeout = null; 
         let currentRankFile = ''; 
-        let dataFetchedTime = null; // ★データを受信した時刻を記録する変数
+        let dataFetchedTime = null; 
 
         const mmrPositions = [
             { id: 'mmr-d5', x: 275, y: 50 },
@@ -177,7 +177,7 @@
                 const latestMatch = (data.mmrchanges && data.mmrchanges.length > 0) ? data.mmrchanges[0] : null;
 
                 if (displayedMmr === 0 && newMmr !== 0) {
-                    // ★ 最初のデータ受信成功時に時刻を記録
+                    
                     dataFetchedTime = Date.now();
 
                     if (latestMatch && latestMatch.mmrdelta !== undefined) {
@@ -198,7 +198,7 @@
                 }
 
                 if (newMmr !== targetMmr) {
-                    // ★ MMRが変動（更新）された場合も、そこから新たに15分を測り直すため時刻を更新
+                    
                     dataFetchedTime = Date.now();
                     
                     targetMmr = newMmr;
@@ -356,7 +356,7 @@
             }, 25);
         }
 
-        // ★可変タイムアウトによるループ制御に変更
+        
         function startPageSwitchLoop() {
             if (pageSwitchTimeout) clearTimeout(pageSwitchTimeout);
             
@@ -366,9 +366,9 @@
             function tick() {
                 if (document.getElementById('error-screen').style.display === 'block') return;
 
-                // ★データ受信（または更新）から15分（15 * 60 * 1000ミリ秒）が経過しているかチェック
+                
                 if (dataFetchedTime && (Date.now() - dataFetchedTime > 15 * 60 * 1000)) {
-                    // 15分経っていたら強制的にページ1（MMR）を表示し、ループを終了する
+                    
                     page2.classList.remove('active');
                     page1.classList.add('active');
                     pageSwitchTimeout = null;
@@ -376,19 +376,19 @@
                 }
 
                 if (page1.classList.contains('active')) {
-                    // ページ1からページ2へ（ページ1は10秒間表示）
+                    
                     page1.classList.remove('active');
                     page2.classList.add('active');
-                    pageSwitchTimeout = setTimeout(tick, 7 * 1000); // 次は7秒後に実行
+                    pageSwitchTimeout = setTimeout(tick, 7 * 1000); 
                 } else {
-                    // ページ2からページ1へ（ページ2は7秒間表示）
+                    
                     page2.classList.remove('active');
                     page1.classList.add('active');
-                    pageSwitchTimeout = setTimeout(tick, 10 * 1000); // 次は10秒後に実行
+                    pageSwitchTimeout = setTimeout(tick, 10 * 1000); 
                 }
             }
 
-            // 最初の切り替えトリガー（最初はページ1が表示されているので10秒待つ）
+            
             pageSwitchTimeout = setTimeout(tick, 10 * 1000);
         }
     </script>
